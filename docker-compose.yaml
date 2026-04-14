@@ -1,0 +1,41 @@
+name: orders
+
+services:
+    app:
+        build: .
+        container_name: orders_app
+        ports:
+            - "8080:8080"
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            DB_HOSTS: database:27017
+            DB_NAME: ecommerce
+            DB_CREDENTIALS_SIDECAR: /app/localDevelopment/db-credentials-sidecar.json
+            ENVIRONMENT: development
+            LOG_LEVEL: debug
+        volumes:
+            - ./localDevelopment:/app/localDevelopment:ro
+
+    database:
+        image: mongodb/mongodb-community-server
+        container_name: orders_db
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: admin
+            MONGO_INITDB_ROOT_PASSWORD: badpassword
+            MONGO_INITDB_DATABASE: ecommerce
+        ports:
+            - "27022:27017"
+        volumes:
+            - data_store:/data/db
+            - ./localDevelopment/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+
+volumes:
+    data_store:
