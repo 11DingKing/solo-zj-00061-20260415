@@ -16,6 +16,7 @@ import (
 	"github.com/rameshsunkara/go-rest-api-example/internal/db"
 	"github.com/rameshsunkara/go-rest-api-example/internal/handlers"
 	"github.com/rameshsunkara/go-rest-api-example/internal/middleware"
+	"github.com/rameshsunkara/go-rest-api-example/internal/services"
 	"github.com/rameshsunkara/go-rest-api-example/internal/utilities"
 	"github.com/rameshsunkara/go-rest-api-example/pkg/flightrecorder"
 	"github.com/rameshsunkara/go-rest-api-example/pkg/logger"
@@ -139,8 +140,13 @@ func WebRouter(svcEnv *config.ServiceEnvConfig, lgr logger.Logger, dbMgr mongodb
 	externalAPIGrp := router.Group("/ecommerce/v1")
 	externalAPIGrp.Use(middleware.AuthMiddleware())
 	externalAPIGrp.Use(middleware.QueryParamsCheckMiddleware(lgr))
+	externalAPIGrp.Use(middleware.ErrorHandlerMiddleware(lgr))
 	ordersGroup := externalAPIGrp.Group("orders")
-	ordersHandler, ordersHandlerErr := handlers.NewOrdersHandler(lgr, ordersRepo)
+	ordersService, ordersServiceErr := services.NewOrdersService(ordersRepo)
+	if ordersServiceErr != nil {
+		return nil, ordersServiceErr
+	}
+	ordersHandler, ordersHandlerErr := handlers.NewOrdersHandler(lgr, ordersService)
 	if ordersHandlerErr != nil {
 		return nil, ordersHandlerErr
 	}
